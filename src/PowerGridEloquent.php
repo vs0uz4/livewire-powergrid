@@ -2,39 +2,35 @@
 
 namespace PowerComponents\LivewirePowerGrid;
 
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection as BaseCollection;
 
-class PowerGridEloquent
+final class PowerGridEloquent
 {
-    protected ?BaseCollection $collection;
+    protected BaseCollection $collection;
 
     public array $columns = [];
 
-    /**
-     * @param BaseCollection|null $collection
-     */
-    public function __construct($collection)
+    public function __construct()
     {
-        $this->collection = $collection;
+        $this->collection = collect();
     }
 
     /**
-     * @param BaseCollection|null $collection
-     * @return PowerGridEloquent
+     * @return static
      */
-    public static function eloquent(?BaseCollection $collection): PowerGridEloquent
+    public static function eloquent(): PowerGridEloquent
     {
-        /** @phpstan-ignore-next-line */
-        return new static($collection);
+        return new PowerGridEloquent();
     }
 
     /**
      * @param string $field
-     * @param \Closure|null $closure
+     * @param Closure|null $closure
      * @return $this
      */
-    public function addColumn(string $field, \Closure $closure = null): PowerGridEloquent
+    public function addColumn(string $field, Closure $closure = null): PowerGridEloquent
     {
         $this->columns[$field] = $closure ?? fn ($model) => $model->{$field};
 
@@ -46,7 +42,7 @@ class PowerGridEloquent
      */
     public function make(): ?array
     {
-        if (!is_a($this->collection, BaseCollection::class)) {
+        if (!is_a((object) $this->collection, BaseCollection::class)) {
             return null;
         }
 

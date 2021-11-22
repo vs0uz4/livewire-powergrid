@@ -3,12 +3,14 @@
 namespace PowerComponents\LivewirePowerGrid\Traits;
 
 use Illuminate\Bus\Batch;
+
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\{Collection as BaseCollection, Str};
 use PowerComponents\LivewirePowerGrid\Services\Spout\{ExportToCsv, ExportToXLS};
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * @property Batch $exportBatch
+ * @property ?Batch $exportBatch
  */
 trait Exportable
 {
@@ -20,8 +22,9 @@ trait Exportable
 
     /**
      * @throws \Exception
+     * @return Collection|BaseCollection
      */
-    public function prepareToExport(bool $selected = false): Collection
+    public function prepareToExport(bool $selected = false)
     {
         $inClause = $this->filtered;
 
@@ -39,13 +42,27 @@ trait Exportable
             return $this->transform($this->resolveCollection());
         }
 
+        $model        = $this->resolveModel();
+        $currentTable = $model->getModel()->getTable();
+
+        if (Str::of($this->sortField)->contains('.')) {
+            $sortField = $this->sortField;
+        } else {
+            $sortField = $currentTable . '.' . $this->sortField;
+        }
+
         if ($inClause) {
-            $results = $this->resolveModel()->whereIn($this->primaryKey, $inClause)->get();
+            $results = $this->resolveModel()
+                ->orderBy($sortField, $this->sortDirection)
+                ->whereIn($this->primaryKey, $inClause)
+                ->get();
 
             return $this->transform($results);
         }
 
-        $results = $this->resolveModel()->get();
+        $results = $this->resolveModel()
+            ->orderBy($sortField, $this->sortDirection)
+            ->get();
 
         return $this->transform($results);
     }
@@ -64,14 +81,18 @@ trait Exportable
             return false;
         }
 
-        return (new ExportToXLS())
+        $exportable = new ExportToXLS();
+
+        $exportable
             ->fileName($this->exportFileName)
-            ->setData($this->columns(), $this->prepareToExport($selected))
-            ->download();
+            ->setData($this->columns(), $this->prepareToExport($selected));
+
+        return $exportable->download();
     }
 
     /**
-     * @throws \Throwable
+     * @throws \Exception | \Throwable
+     * @return BinaryFileResponse | bool
      */
     public function exportToCsv(bool $selected = false)
     {
@@ -80,12 +101,15 @@ trait Exportable
         }
 
         if (count($this->checkboxValues) === 0 && $selected) {
-            return;
+            return false;
         }
 
-        return (new ExportToCsv())
+        $exportable = new ExportToCsv();
+
+        $exportable
             ->fileName($this->exportFileName)
-            ->setData($this->columns(), $this->prepareToExport($selected))
-            ->download();
+            ->setData($this->columns(), $this->prepareToExport($selected));
+
+        return $exportable->download();
     }
 }

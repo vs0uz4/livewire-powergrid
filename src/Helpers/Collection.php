@@ -71,9 +71,9 @@ class Collection implements CollectionFilterInterface
     /**
      * @param BaseCollection $results
      * @param int $pageSize
-     * @return LengthAwarePaginator
+     * @return mixed|LengthAwarePaginator
      */
-    public static function paginate(BaseCollection $results, $pageSize): LengthAwarePaginator
+    public static function paginate(BaseCollection $results, int $pageSize)
     {
         $pageSize = ($pageSize == '0') ? $results->count() : $pageSize;
         $page     = Paginator::resolveCurrentPage('page');
@@ -95,6 +95,7 @@ class Collection implements CollectionFilterInterface
      * @param int $currentPage
      * @param array $options
      * @return LengthAwarePaginator
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
     protected static function paginator($items, $total, $perPage, $currentPage, $options): LengthAwarePaginator
     {
@@ -207,36 +208,48 @@ class Collection implements CollectionFilterInterface
     {
         $textFieldOperator = ($this->validateInputTextOptions($field) ? strtolower($this->filters['input_text_options'][$field]) : 'contains');
 
-        if ($textFieldOperator == 'is') {
-            $this->query = $this->query->where($field, '=', $value);
-        }
+        switch ($textFieldOperator) {
+            case 'is':
+                $this->query = $this->query->where($field, '=', $value);
 
-        if ($textFieldOperator == 'is_not') {
-            $this->query = $this->query->where($field, '!=', $value);
-        }
+                break;
+            case 'is_not':
+                $this->query = $this->query->where($field, '!=', $value);
 
-        if ($textFieldOperator == 'starts_with') {
-            $this->query = $this->query->filter(function ($row) use ($field, $value) {
-                return Str::startsWith(Str::lower($row->$field), Str::lower($value));
-            });
-        }
+                break;
+            case 'starts_with':
+                $this->query = $this->query->filter(function ($row) use ($field, $value) {
+                    $row = (object) $row;
 
-        if ($textFieldOperator == 'ends_with') {
-            $this->query = $this->query->filter(function ($row) use ($field, $value) {
-                return Str::endsWith(Str::lower($row->$field), Str::lower($value));
-            });
-        }
+                    return Str::startsWith(Str::lower($row->{$field}), Str::lower($value));
+                });
 
-        if ($textFieldOperator == 'contains') {
-            $this->query = $this->query->filter(function ($row) use ($field, $value) {
-                return false !== stristr($row->$field, strtolower($value));
-            });
-        }
+                break;
+            case 'ends_with':
+                $this->query = $this->query->filter(function ($row) use ($field, $value) {
+                    $row = (object) $row;
 
-        if ($textFieldOperator == 'contains_not') {
-            $this->query = $this->query->filter(function ($row) use ($field, $value) {
-                return !Str::Contains(Str::lower($row->$field), Str::lower($value));
-            });
+                    return Str::endsWith(Str::lower($row->{$field}), Str::lower($value));
+                });
+
+                break;
+            case 'contains':
+                $this->query = $this->query->filter(function ($row) use ($field, $value) {
+                    $row = (object) $row;
+
+                    return false !== stristr($row->{$field}, strtolower($value));
+                });
+
+                break;
+            case 'contains_not':
+
+                $this->query = $this->query->filter(function ($row) use ($field, $value) {
+                    $row = (object) $row;
+
+                    return !Str::Contains(Str::lower($row->{$field}), Str::lower($value));
+                });
+
+                break;
         }
     }
 
@@ -272,7 +285,7 @@ class Collection implements CollectionFilterInterface
      */
     public function filterMultiSelect(string $field, ?string $value): void
     {
-        $empty  = false;
+        $empty = false;
         /** @var array $values */
         $values = collect($value)->get('values');
         if (is_array($values) && count($values) > 0) {

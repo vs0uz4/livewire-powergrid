@@ -50,14 +50,12 @@ final class Column
      */
     public array $clickToCopy = [];
 
-    public string $tableWithColumn = '';
-
     /**
      * @return self
      */
     public static function add(): self
     {
-        return new static();
+        return new Column();
     }
 
     /**
@@ -93,7 +91,7 @@ final class Column
      */
     public function searchable(): Column
     {
-        $this->searchable = true;
+        $this->searchable       = true;
 
         return $this;
     }
@@ -103,23 +101,24 @@ final class Column
      *
      * @return $this
      */
-    public function sortable(string $tableWithColumn = ''): Column
+    public function sortable(): Column
     {
         $this->sortable            = true;
-        $this->tableWithColumn     = $tableWithColumn;
 
         return $this;
     }
 
     /**
-     * Field name in the database
+     * Field in the database
      *
      * @param string $field
+     * @param string $dataField
      * @return $this
      */
-    public function field(string $field): Column
+    public function field(string $field, string $dataField = ''): Column
     {
-        $this->field = $field;
+        $this->field     = $field;
+        $this->dataField = $dataField;
 
         return $this;
     }
