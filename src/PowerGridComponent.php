@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\{AbstractPaginator, LengthAwarePaginator};
 use Illuminate\Support\{Collection as BaseCollection, Str};
 use Livewire\{Component, WithPagination};
-use PowerComponents\LivewirePowerGrid\Helpers\{Collection, Model};
+use PowerComponents\LivewirePowerGrid\Helpers\{Collection, Model, SqlSupport};
 use PowerComponents\LivewirePowerGrid\Themes\ThemeBase;
 use PowerComponents\LivewirePowerGrid\Traits\{BatchableExport, Checkbox, Exportable, Filter, WithSorting};
 
@@ -57,9 +57,9 @@ class PowerGridComponent extends Component
 
     public array $relationSearch = [];
 
-    public bool $ignoreTablePrefix = false;
+    public bool $ignoreTablePrefix = true;
 
-    public bool $showDefaultMessage = false;
+    public bool $showUpdateMessages = false;
 
     /**
      * @var string[] $listeners
@@ -126,7 +126,6 @@ class PowerGridComponent extends Component
 
     /**
      * default full. other: short, min
-     * @param string $mode
      * @return $this
      */
     public function showRecordCount(string $mode = 'full'): PowerGridComponent
@@ -147,10 +146,6 @@ class PowerGridComponent extends Component
         return $this;
     }
 
-    /**
-     * @param string $attribute
-     * @return PowerGridComponent
-     */
     public function showCheckBox(string $attribute = 'id'): PowerGridComponent
     {
         $this->checkbox          = true;
@@ -169,12 +164,11 @@ class PowerGridComponent extends Component
     }
 
     /**
-     * @param int $perPage
      * @return $this
      */
     public function showPerPage(int $perPage = 10): PowerGridComponent
     {
-        if (\Str::contains((string) $perPage, $this->perPageValues)) {
+        if (Str::contains((string) $perPage, $this->perPageValues)) {
             $this->perPageInput = true;
             $this->perPage      = $perPage;
         }
@@ -240,10 +234,9 @@ class PowerGridComponent extends Component
 
     /**
      * @param array|BaseCollection|Builder|null $datasource
-     * @return BaseCollection
      * @throws Exception
      */
-    private function resolveCollection($datasource = null)
+    private function resolveCollection($datasource = null): BaseCollection
     {
         if (!powerGridCache()) {
             return new BaseCollection($this->datasource());
@@ -262,25 +255,24 @@ class PowerGridComponent extends Component
     }
 
     /**
-     * @param array $data
      * @throws Exception
      */
     public function eventInputChanged(array $data): void
     {
         $update = $this->update($data);
 
-        if (!$update) {
-            session()->flash('error', $this->updateMessages('error', data_get($data, 'field')));
-
-            return;
-        }
-        session()->flash('success', $this->updateMessages('success', data_get($data, 'field')));
-
-        if (!is_array($this->datasource)) {
-            return;
-        }
-
         $this->fillData();
+
+        if (!$this->showUpdateMessages) {
+            return;
+        }
+
+        if (!$update) {
+            session()->flash('error', $this->updateMessages('error', $data['field']));
+
+            return;
+        }
+        session()->flash('success', $this->updateMessages('success', $data['field']));
     }
 
     /**
@@ -303,8 +295,6 @@ class PowerGridComponent extends Component
     }
 
     /**
-     * @param string $status
-     * @param string $field
      * @return array|null|string
      */
     public function updateMessages(string $status, string $field = '_default_message')
@@ -380,7 +370,11 @@ class PowerGridComponent extends Component
             });
 
         if ($this->withSortStringNumber) {
-            $results->orderByRaw("$sortField+0 $this->sortDirection");
+            $sortFieldType = SqlSupport::getSortFieldType($sortField);
+
+            if (SqlSupport::isValidSortFieldType($sortFieldType)) {
+                $results->orderByRaw(SqlSupport::sortStringAsNumber($sortField) . ' ' . $this->sortDirection);
+            }
         }
 
         $results = $results->orderBy($sortField, $this->sortDirection);
@@ -396,11 +390,7 @@ class PowerGridComponent extends Component
         return $results->setCollection($this->transform($results->getCollection()));
     }
 
-    /**
-     * @param mixed $results
-     * @return BaseCollection|\Illuminate\Database\Eloquent\Collection
-     */
-    private function transform($results)
+    private function transform(BaseCollection $results): BaseCollection
     {
         if (!is_a((object) $this->addColumns(), PowerGridEloquent::class)) {
             return $results;
@@ -419,6 +409,9 @@ class PowerGridComponent extends Component
         });
     }
 
+    /**
+     * @throws Exception
+     */
     public function toggleColumn(string $field): void
     {
         $this->columns = collect($this->columns)->map(function ($column) use ($field) {
@@ -433,9 +426,7 @@ class PowerGridComponent extends Component
     }
 
     /**
-     * @param string $fileName
      * @param array|string[] $type
-     * @return PowerGridComponent
      */
     public function showExportOption(string $fileName, array $type = ['excel', 'csv']): PowerGridComponent
     {

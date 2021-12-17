@@ -1,5 +1,11 @@
 <div>
-    @if(data_get($column->toggleable, 'enabled'))
+    @php
+        $showDefaultToggle = false;
+        if (str_contains($primaryKey, '.')) {
+            $showDefaultToggle = true;
+        }
+    @endphp
+    @if(data_get($column->toggleable, 'enabled') && !$showDefaultToggle)
         <div class="flex justify-center"
              x-data="{ toggle: {{ $row->{$column->field} }} }">
             <div class="relative rounded-full w-12 h-6 transition duration-200 ease-linear"
@@ -11,19 +17,6 @@
                        class="appearance-none w-full h-full active:outline-none focus:outline-none"
                        @click="saveToggleableInput((toggle === 0 ? toggle = 1 : toggle = 0), {{ $row->{$primaryKey} }}, '{{ $column->field }}')">
             </div>
-            @else
-                <div class="flex flex-row justify-center">
-                    @if($row->{$column->field} === 0)
-                        <div class="text-xs px-4 w-auto py-1 text-center bg-blue-200 text-blue-800 rounded-md">
-                            {{ $column->toggleable['default'][1] }}
-                        </div>
-                    @else
-                        <div class="text-xs px-4 w-auto py-1 text-center bg-blue-200 text-blue-800 rounded-md">
-                            {{ $column->toggleable['default'][0] }}
-                        </div>
-                    @endif
-                </div>
-            @endif
         </div>
         <script>
             function saveToggleableInput(value, id, field) {
@@ -35,4 +28,17 @@
                 })
             }
         </script>
+    @else
+        <div class="flex flex-row justify-center">
+            @if($row->{$column->field} == 0)
+                <div class="text-xs px-4 w-auto py-1 text-center bg-red-200 text-red-800 rounded-md">
+                    {{ $column->toggleable['default'][1] }}
+                </div>
+            @else
+                <div class="text-xs px-4 w-auto py-1 text-center bg-blue-200 text-blue-800 rounded-md">
+                    {{ $column->toggleable['default'][0] }}
+                </div>
+            @endif
+        </div>
+    @endif
 </div>

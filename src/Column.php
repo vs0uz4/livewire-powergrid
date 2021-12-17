@@ -61,7 +61,6 @@ final class Column
     /**
      * Column title representing a field
      *
-     * @param string $title
      * @return $this
      */
     public function title(string $title): Column
@@ -74,7 +73,6 @@ final class Column
     /**
      * Placeholder
      *
-     * @param string $placeholder
      * @return $this
      */
     public function placeholder(string $placeholder): Column
@@ -111,14 +109,14 @@ final class Column
     /**
      * Field in the database
      *
-     * @param string $field
-     * @param string $dataField
      * @return $this
      */
     public function field(string $field, string $dataField = ''): Column
     {
         $this->field     = $field;
-        $this->dataField = $dataField;
+        if (filled($dataField)) {
+            $this->dataField = $dataField;
+        }
 
         return $this;
     }
@@ -126,8 +124,6 @@ final class Column
     /**
      * Class html tag header table
      *
-     * @param string $classAttr
-     * @param string $styleAttr
      * @return $this
      */
     public function headerAttribute(string $classAttr = '', string $styleAttr = ''): Column
@@ -141,8 +137,6 @@ final class Column
     /**
      * Class html tag body table
      *
-     * @param string $classAttr
-     * @param string $styleAttr
      * @return $this
      */
     public function bodyAttribute(string $classAttr = '', string $styleAttr = ''): Column
@@ -169,9 +163,6 @@ final class Column
     }
 
     /**
-     * @param Collection $datasource
-     * @param string $displayField
-     * @param string $dataField
      * @param array<string, bool> $settings
      * @return $this
      */
@@ -188,9 +179,6 @@ final class Column
     }
 
     /**
-     * @param Collection $datasource
-     * @param string $displayField
-     * @param string $dataField
      * @param array<string, bool> $settings
      * @return $this
      */
@@ -206,17 +194,17 @@ final class Column
     }
 
     /**
-     * @param string $dataField
      * @param array<string, bool> $settings [only_future', 'no_weekends']
-     * @param string $classAttr
      * @return Column
      */
-    public function makeInputDatePicker(string $dataField, array $settings = [], string $classAttr = ''): Column
+    public function makeInputDatePicker(string $dataField = '', array $settings = [], string $classAttr = ''): Column
     {
         $this->inputs['date_picker']['enabled'] = true;
         $this->inputs['date_picker']['class']   = $classAttr;
         $this->inputs['date_picker']['config']  = $settings;
-        $this->dataField                        = $dataField;
+        if (filled($dataField)) {
+            $this->dataField = $dataField;
+        }
 
         return $this;
     }
@@ -224,14 +212,14 @@ final class Column
     /**
      * Adds Edit on click to a column
      *
-     * @param bool $hasPermission
-     * @param string $dataField
      * @return Column
      */
     public function editOnClick(bool $hasPermission = true, string $dataField = ''): Column
     {
         $this->editable  = $hasPermission;
-        $this->dataField = $dataField;
+        if (filled($dataField)) {
+            $this->dataField = $dataField;
+        }
 
         return $this;
     }
@@ -239,9 +227,6 @@ final class Column
     /**
      * Adds Toggle to a column
      *
-     * @param bool $hasPermission
-     * @param string $trueLabel Label for true
-     * @param string $falseLabel Label for false
      * @return Column
      */
     public function toggleable(bool $hasPermission = true, string $trueLabel = 'Yes', string $falseLabel = 'No'): Column
@@ -256,9 +241,6 @@ final class Column
     }
 
     /**
-     * @param string $dataField
-     * @param string $thousands
-     * @param string $decimal
      * @return $this
      */
     public function makeInputRange(string $dataField = '', string $thousands = '', string $decimal = ''): Column
@@ -266,26 +248,27 @@ final class Column
         $this->inputs['number']['enabled']   = true;
         $this->inputs['number']['decimal']   = $decimal;
         $this->inputs['number']['thousands'] = $thousands;
-        $this->dataField                     = $dataField;
+        if (filled($dataField)) {
+            $this->dataField = $dataField;
+        }
 
         return $this;
     }
 
     /**
-     * @param string $dataField
      * @return $this
      */
     public function makeInputText(string $dataField = ''): Column
     {
         $this->inputs['input_text']['enabled'] = true;
-        $this->dataField                       = $dataField;
+        if (filled($dataField)) {
+            $this->dataField = $dataField;
+        }
 
         return $this;
     }
 
     /**
-     * @param bool $hasPermission
-     * @param string $label
      * @return $this
      */
     public function clickToCopy(bool $hasPermission, string $label = 'copy'): Column
@@ -299,9 +282,6 @@ final class Column
     }
 
     /**
-     * @param string $dataField
-     * @param string $trueLabel Label for true
-     * @param string $falseLabel Label for false
      * @param array<string, string> $settings Settings
      * @return $this
      */
@@ -312,7 +292,9 @@ final class Column
         $this->inputs['boolean_filter']['false_label'] = $falseLabel;
         $this->inputs['boolean_filter']['class']       = $settings['class']       ?? '';
         $this->inputs['boolean_filter']['live-search'] = $settings['live-search'] ?? true;
-        $this->dataField                               = $dataField;
+        if (filled($dataField)) {
+            $this->dataField = $dataField;
+        }
 
         return $this;
     }

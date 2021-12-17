@@ -4,7 +4,7 @@ namespace PowerComponents\LivewirePowerGrid\Helpers;
 
 use Illuminate\Container\Container;
 use Illuminate\Pagination\{LengthAwarePaginator, Paginator};
-use Illuminate\Support\{Carbon, Collection as BaseCollection, Str};
+use Illuminate\Support\{Carbon, Collection as BaseCollection, Facades\Schema, Str};
 use PowerComponents\LivewirePowerGrid\Services\Contracts\CollectionFilterInterface;
 
 class Collection implements CollectionFilterInterface
@@ -17,9 +17,6 @@ class Collection implements CollectionFilterInterface
 
     private array $filters;
 
-    /**
-     * Model constructor.
-     */
     public function __construct(BaseCollection $query)
     {
         $this->query = $query;
@@ -68,12 +65,7 @@ class Collection implements CollectionFilterInterface
         return $this;
     }
 
-    /**
-     * @param BaseCollection $results
-     * @param int $pageSize
-     * @return mixed|LengthAwarePaginator
-     */
-    public static function paginate(BaseCollection $results, int $pageSize)
+    public static function paginate(BaseCollection $results, int $pageSize): LengthAwarePaginator
     {
         $pageSize = ($pageSize == '0') ? $results->count() : $pageSize;
         $page     = Paginator::resolveCurrentPage('page');
@@ -86,39 +78,28 @@ class Collection implements CollectionFilterInterface
         ]);
     }
 
-    /**
-     * Create a new length-aware paginator instance.
-     *
-     * @param BaseCollection $items
-     * @param int $total
-     * @param int $perPage
-     * @param int $currentPage
-     * @param array $options
-     * @return LengthAwarePaginator
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    protected static function paginator($items, $total, $perPage, $currentPage, $options): LengthAwarePaginator
+    protected static function paginator(BaseCollection $items, int $total, int $perPage, int $currentPage, array $options): LengthAwarePaginator
     {
-        return Container::getInstance()->makeWith(LengthAwarePaginator::class, compact(
+        /** @var LengthAwarePaginator $paginator */
+        $paginator = Container::getInstance()->makeWith(LengthAwarePaginator::class, compact(
             'items',
             'total',
             'perPage',
             'currentPage',
             'options'
         ));
+
+        return $paginator;
     }
 
-    /**
-     * @return BaseCollection
-     */
     public function search(): BaseCollection
     {
         if (!empty($this->search)) {
             $this->query = $this->query->filter(function ($row) {
                 foreach ($this->columns as $column) {
                     $field = $column->field;
-                    if (Str::contains(strtolower($row->$field), strtolower($this->search))) {
-                        return false !== stristr($row->$field, strtolower($this->search));
+                    if (Str::contains(strtolower($row->{$field}), strtolower($this->search))) {
+                        return false !== stristr($row->{$field}, strtolower($this->search));
                     }
                 }
             });
@@ -127,9 +108,6 @@ class Collection implements CollectionFilterInterface
         return $this->query;
     }
 
-    /**
-     * @return BaseCollection
-     */
     public function filter(): BaseCollection
     {
         if (count($this->filters) === 0) {
@@ -138,9 +116,6 @@ class Collection implements CollectionFilterInterface
 
         foreach ($this->filters as $key => $type) {
             foreach ($type as $field => $value) {
-                if (!filled($value)) {
-                    continue;
-                }
                 switch ($key) {
                     case 'date_picker':
                         $this->filterDatePicker($field, $value);
@@ -173,11 +148,6 @@ class Collection implements CollectionFilterInterface
         return $this->query;
     }
 
-    /**
-     * @param string $field
-     * @param array $value
-     * @return void
-     */
     public function filterDatePicker(string $field, array $value): void
     {
         if (isset($value[0]) && isset($value[1])) {
@@ -185,28 +155,9 @@ class Collection implements CollectionFilterInterface
         }
     }
 
-    /**
-     * Validate if the given value is valid as an Input Option
-     *
-     * @param string $field Field to be checked
-     * @return bool
-     */
-    private function validateInputTextOptions(string $field): bool
+    public function filterInputText(string $field, ?string $value): void
     {
-        return isset($this->filters['input_text_options'][$field]) && in_array(
-            strtolower($this->filters['input_text_options'][$field]),
-            ['is', 'is_not', 'contains', 'contains_not', 'starts_with', 'ends_with']
-        );
-    }
-
-    /**
-     * @param string $field
-     * @param string $value
-     * @return void
-     */
-    public function filterInputText(string $field, string $value): void
-    {
-        $textFieldOperator = ($this->validateInputTextOptions($field) ? strtolower($this->filters['input_text_options'][$field]) : 'contains');
+        $textFieldOperator = (validateInputTextOptions($this->filters, $field) ? strtolower($this->filters['input_text_options'][$field]) : 'contains');
 
         switch ($textFieldOperator) {
             case 'is':
@@ -221,7 +172,7 @@ class Collection implements CollectionFilterInterface
                 $this->query = $this->query->filter(function ($row) use ($field, $value) {
                     $row = (object) $row;
 
-                    return Str::startsWith(Str::lower($row->{$field}), Str::lower($value));
+                    return Str::startsWith(Str::lower($row->{$field}), Str::lower((string) $value));
                 });
 
                 break;
@@ -229,7 +180,7 @@ class Collection implements CollectionFilterInterface
                 $this->query = $this->query->filter(function ($row) use ($field, $value) {
                     $row = (object) $row;
 
-                    return Str::endsWith(Str::lower($row->{$field}), Str::lower($value));
+                    return Str::endsWith(Str::lower($row->{$field}), Str::lower((string) $value));
                 });
 
                 break;
@@ -237,7 +188,7 @@ class Collection implements CollectionFilterInterface
                 $this->query = $this->query->filter(function ($row) use ($field, $value) {
                     $row = (object) $row;
 
-                    return false !== stristr($row->{$field}, strtolower($value));
+                    return false !== stristr($row->{$field}, strtolower((string) $value));
                 });
 
                 break;
@@ -246,18 +197,55 @@ class Collection implements CollectionFilterInterface
                 $this->query = $this->query->filter(function ($row) use ($field, $value) {
                     $row = (object) $row;
 
-                    return !Str::Contains(Str::lower($row->{$field}), Str::lower($value));
+                    return !Str::Contains(Str::lower($row->{$field}), Str::lower((string) $value));
                 });
 
                 break;
+
+            case 'is_blank':
+                $this->query = $this->query->whereNotNull($field)->where($field, '=', '');
+
+            break;
+
+            case 'is_not_blank':
+                $this->query = $this->query->filter(function ($row) use ($field) {
+                    $row = (object) $row;
+
+                    return $row->{$field} != '' || is_null($row->{$field});
+                });
+
+            break;
+
+            case 'is_null':
+                $this->query = $this->query->whereNull($field);
+
+            break;
+
+            case 'is_not_null':
+                $this->query = $this->query->whereNotNull($field);
+
+            break;
+
+            case 'is_empty':
+                $this->query = $this->query->filter(function ($row) use ($field) {
+                    $row = (object) $row;
+
+                    return $row->{$field} == '' || is_null($row->{$field});
+                });
+
+            break;
+
+            case 'is_not_empty':
+                $this->query = $this->query->filter(function ($row) use ($field) {
+                    $row = (object) $row;
+
+                    return $row->{$field} !== '' && !is_null($row->{$field});
+                });
+
+            break;
         }
     }
 
-    /**
-     * @param string $field
-     * @param string $value
-     * @return void
-     */
     public function filterBoolean(string $field, string $value): void
     {
         if ($value != 'all') {
@@ -267,10 +255,6 @@ class Collection implements CollectionFilterInterface
         }
     }
 
-    /**
-     * @param string $field
-     * @param string $value
-     */
     public function filterSelect(string $field, string $value): void
     {
         if (filled($value)) {
@@ -279,9 +263,7 @@ class Collection implements CollectionFilterInterface
     }
 
     /**
-     * @param string $field
      * @param string | null | array $value
-     * @return void
      */
     public function filterMultiSelect(string $field, $value): void
     {
@@ -301,7 +283,6 @@ class Collection implements CollectionFilterInterface
     }
 
     /**
-     * @param string $field
      * @param array<string> $value
      */
     public function filterNumber(string $field, array $value): void
@@ -329,9 +310,6 @@ class Collection implements CollectionFilterInterface
         }
     }
 
-    /**
-     * @return Collection
-     */
     public function filterContains(): Collection
     {
         if (!empty($this->search)) {
@@ -339,14 +317,20 @@ class Collection implements CollectionFilterInterface
                 $row = (object) $row;
 
                 foreach ($this->columns as $column) {
-                    $field = $column->field;
-
-                    try {
-                        if (Str::contains(strtolower($row->{$field}), strtolower($this->search))) {
-                            return false !== stristr($row->{$field}, strtolower($this->search));
+                    if ($column->searchable) {
+                        if (filled($column->dataField)) {
+                            $field = $column->dataField;
+                        } else {
+                            $field = $column->field;
                         }
-                    } catch (\Exception $exception) {
-                        throw new \Exception($exception);
+
+                        try {
+                            if (Str::contains(strtolower($row->{$field}), strtolower($this->search))) {
+                                return false !== stristr($row->{$field}, strtolower($this->search));
+                            }
+                        } catch (\Exception $exception) {
+                            throw new \Exception($exception);
+                        }
                     }
                 }
 

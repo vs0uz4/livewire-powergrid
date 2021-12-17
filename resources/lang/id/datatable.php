@@ -18,7 +18,7 @@ return [
     ],
     'pagination' => [
         'showing' => 'Menampilkan',
-        'to'      => 'kepada',
+        'to'      => 'hingga',
         'of'      => 'dari',
         'results' => 'Hasil',
         'all'     => 'Semua',
@@ -41,5 +41,15 @@ return [
         'contains_not' => 'Tidak terkait',
         'starts_with'  => 'Dimulai dengan',
         'ends_with'    => 'Diakhiri dengan',
+        'is_null'      => 'Tidak ada',
+        'is_not_null'  => 'Ada',
+        'is_blank'     => 'Kosong',
+        'is_not_blank' => 'Tidak kosong',
+        'is_empty'     => 'Kosong atau tidak ada',
+        'is_not_empty' => 'Tidak kosong dan ada',
+    ],
+    'export' => [
+        'exporting' => 'Harap tunggu!',
+        'completed' => 'Ekspor selesai! File anda siap diunduh',
     ],
 ];
