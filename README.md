@@ -8,7 +8,7 @@
         <a href="https://packagist.org/packages/power-components/livewire-powergrid"><img alt="Latest Version" src="https://img.shields.io/packagist/v/power-components/livewire-powergrid"></a>
         <a href="https://packagist.org/packages/power-components/livewire-powergrid"><img alt="License" src="https://img.shields.io/packagist/l/power-components/livewire-powergrid"></a>
     </p>
-    <a href="https://livewire-powergrid.docsforge.com/" target="_blank">📚 Documentation</a> |
+    <a href="https://livewire-powergrid.com" target="_blank">📚 Documentation</a> |
     <a href="#features">🔥 Features</a> |
     <a href="#get-started">⌨️ Get started</a>
 </div>
@@ -58,11 +58,15 @@ With PowerGrid you get right out of the box:
 
 - **Column Sorting**
 
+- **Column Sum, Count & Average in Header/Footer**
+
 - **Pagination**
 
-- **Action checkboxes**
+- **Action Checkboxes**
 
-- **Action buttons**
+- **Action Buttons**
+
+- **Action Rules for disable, hide and modify Action Buttons, Checkboxes and rows**
 
 - **Toggle button**
 
@@ -101,7 +105,7 @@ With PowerGrid you get right out of the box:
 
 ## 2. Install
 
-Please follow the steps indicated in our [Documentation - Install](https://livewire-powergrid.docsforge.com/main/install/) page.
+Please follow the steps indicated in our [Documentation - Install](https://livewire-powergrid.com/#/get-started/install) page.
 
 <br/>
 
@@ -125,10 +129,10 @@ Verify if your bug/question or feature request has been previously submitted.
 
 ## 5. Credits
 
-Created by: [Luan Freitas](https://github.com/luanfreitasdev)
+Created by: [Luan Freitas](https://twitter.com/luanfreitasdev)
 
 - [Contributors](../../contributors)
-- Logo & artwork by [Caneco](https://github.com/caneco)
+- Logo & artwork by [Caneco](https://twitter.com/caneco)
 
 <br/>
 
